@@ -1,4 +1,4 @@
-# Rebus.TODO
+# Rebus.Unity
 
 Provides a Unity container adapter for [Rebus](https://github.com/rebus-org/Rebus).
 
