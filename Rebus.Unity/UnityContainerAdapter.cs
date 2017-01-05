@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Practices.Unity;
 using Rebus.Activation;
 using Rebus.Bus;
+using Rebus.Bus.Advanced;
 using Rebus.Extensions;
 using Rebus.Handlers;
 using Rebus.Pipeline;
@@ -25,6 +26,7 @@ namespace Rebus.Unity
         /// </summary>
         public UnityContainerAdapter(IUnityContainer unityContainer)
         {
+            if (unityContainer == null) throw new ArgumentNullException(nameof(unityContainer));
             _unityContainer = unityContainer;
         }
 
@@ -68,6 +70,8 @@ namespace Rebus.Unity
         public void SetBus(IBus bus)
         {
             _unityContainer.RegisterInstance(bus, new ContainerControlledLifetimeManager());
+
+            _unityContainer.RegisterType<ISyncBus>(new InjectionFactory(c => c.Resolve<IBus>().Advanced.SyncBus));
 
             _unityContainer.RegisterType<IMessageContext>(new InjectionFactory(c =>
             {
