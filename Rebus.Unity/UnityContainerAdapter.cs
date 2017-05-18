@@ -69,6 +69,11 @@ namespace Rebus.Unity
         /// </summary>
         public void SetBus(IBus bus)
         {
+            if (_unityContainer.IsRegistered<IBus>())
+            {
+                throw new InvalidOperationException("Cannot register IBus because one has already been registered. If you want to host multiple Rebus endpoints in a single process, please use separate container instances for them.");
+            }
+
             _unityContainer.RegisterInstance(bus, new ContainerControlledLifetimeManager());
 
             _unityContainer.RegisterType<ISyncBus>(new InjectionFactory(c => c.Resolve<IBus>().Advanced.SyncBus));
