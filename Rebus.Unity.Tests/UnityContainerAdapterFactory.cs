@@ -4,43 +4,80 @@ using System.Linq;
 using Microsoft.Practices.Unity;
 using Rebus.Activation;
 using Rebus.Bus;
+using Rebus.Config;
 using Rebus.Handlers;
 using Rebus.Tests.Contracts.Activation;
 
 namespace Rebus.Unity.Tests
 {
-    public class UnityContainerAdapterFactory : IContainerAdapterFactory
+    public class UnityContainerAdapterFactory : IActivationContext
     {
-        readonly UnityContainer _unityContainer = new UnityContainer();
-
-        public IHandlerActivator GetActivator()
+        public IHandlerActivator CreateActivator(Action<IHandlerRegistry> configureHandlers, out IActivatedContainer container)
         {
-            return new UnityContainerAdapter(_unityContainer);
+            var unityContainer = new UnityContainer();
+
+            configureHandlers.Invoke(new HandlerRegistry(unityContainer));
+
+            container = new ActivatedContainer(unityContainer);
+
+            return new UnityContainerAdapter(unityContainer);
         }
 
-        public void RegisterHandlerType<THandler>() where THandler : class, IHandleMessages
+        public IBus CreateBus(Action<IHandlerRegistry> configureHandlers, Func<RebusConfigurer, RebusConfigurer> configureBus, out IActivatedContainer container)
         {
-            foreach (var handlerInterfaceType in GetHandlerInterfaces<THandler>())
-            {
-                var componentName = $"{typeof (THandler).FullName}:{handlerInterfaceType.FullName}";
+            var unityContainer = new UnityContainer();
 
-                _unityContainer.RegisterType(handlerInterfaceType, typeof(THandler), componentName, new TransientLifetimeManager(), new InjectionMember[0]);
+            configureHandlers.Invoke(new HandlerRegistry(unityContainer));
+
+            container = new ActivatedContainer(unityContainer);
+
+            return configureBus(Configure.With(new UnityContainerAdapter(unityContainer))).Start();
+        }
+
+        class HandlerRegistry : IHandlerRegistry
+        {
+            readonly UnityContainer _unityContainer;
+
+            public HandlerRegistry(UnityContainer unityContainer)
+            {
+                _unityContainer = unityContainer;
+            }
+
+            public IHandlerRegistry Register<THandler>() where THandler : class, IHandleMessages
+            {
+                foreach (var handlerInterfaceType in GetHandlerInterfaces<THandler>())
+                {
+                    var componentName = $"{typeof(THandler).FullName}:{handlerInterfaceType.FullName}";
+
+                    _unityContainer.RegisterType(handlerInterfaceType, typeof(THandler), componentName, new TransientLifetimeManager(), new InjectionMember[0]);
+                }
+                return this;
+            }
+
+            static IEnumerable<Type> GetHandlerInterfaces<THandler>() where THandler : class, IHandleMessages
+            {
+                return typeof(THandler).GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleMessages<>));
             }
         }
 
-        public void CleanUp()
+        class ActivatedContainer : IActivatedContainer
         {
-            _unityContainer.Dispose();
-        }
+            readonly UnityContainer _unityContainer;
 
-        public IBus GetBus()
-        {
-            return _unityContainer.Resolve<IBus>();
-        }
+            public ActivatedContainer(UnityContainer unityContainer)
+            {
+                _unityContainer = unityContainer;
+            }
 
-        static IEnumerable<Type> GetHandlerInterfaces<THandler>() where THandler : class, IHandleMessages
-        {
-            return typeof (THandler).GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof (IHandleMessages<>));
+            public IBus ResolveBus()
+            {
+                return _unityContainer.Resolve<IBus>();
+            }
+
+            public void Dispose()
+            {
+                _unityContainer.Dispose();
+            }
         }
     }
 }
