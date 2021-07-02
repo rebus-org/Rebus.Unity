@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Practices.Unity;
 using Rebus.Activation;
 using Rebus.Bus;
 using Rebus.Bus.Advanced;
@@ -10,6 +9,8 @@ using Rebus.Extensions;
 using Rebus.Handlers;
 using Rebus.Pipeline;
 using Rebus.Transport;
+using Unity;
+using Unity.Lifetime;
 #pragma warning disable 1998
 
 namespace Rebus.Unity
@@ -37,7 +38,7 @@ namespace Rebus.Unity
         {
             var resolvedHandlerInstances = ResolvePoly<TMessage>();
             
-            transactionContext.OnDisposed(() =>
+            transactionContext.OnDisposed(_ =>
             {
                 foreach (var disposableInstance in resolvedHandlerInstances.OfType<IDisposable>())
                 {
@@ -76,9 +77,9 @@ namespace Rebus.Unity
 
             _unityContainer.RegisterInstance(bus, new ContainerControlledLifetimeManager());
 
-            _unityContainer.RegisterType<ISyncBus>(new InjectionFactory(c => c.Resolve<IBus>().Advanced.SyncBus));
+            _unityContainer.RegisterFactory<ISyncBus>(c => c.Resolve<IBus>().Advanced.SyncBus);
 
-            _unityContainer.RegisterType<IMessageContext>(new InjectionFactory(c =>
+            _unityContainer.RegisterFactory<IMessageContext>(c =>
             {
                 var currentMessageContext = MessageContext.Current;
                 if (currentMessageContext == null)
@@ -86,7 +87,7 @@ namespace Rebus.Unity
                     throw new InvalidOperationException("Attempted to inject the current message context from MessageContext.Current, but it was null! Did you attempt to resolve IMessageContext from outside of a Rebus message handler?");
                 }
                 return currentMessageContext;
-            }));
+            });
         }
     }
 }

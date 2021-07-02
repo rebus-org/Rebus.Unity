@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Practices.Unity;
 using Rebus.Activation;
 using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Handlers;
 using Rebus.Tests.Contracts.Activation;
+using Unity;
+using Unity.Injection;
 
 namespace Rebus.Unity.Tests
 {
@@ -49,7 +50,7 @@ namespace Rebus.Unity.Tests
                 {
                     var componentName = $"{typeof(THandler).FullName}:{handlerInterfaceType.FullName}";
 
-                    _unityContainer.RegisterType(handlerInterfaceType, typeof(THandler), componentName, new TransientLifetimeManager(), new InjectionMember[0]);
+                    _unityContainer.RegisterType(handlerInterfaceType, typeof(THandler), componentName, new InjectionMember[0]);
                 }
                 return this;
             }
