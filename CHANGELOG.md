@@ -20,3 +20,8 @@
 
 * Update to Rebus 4
 * Port to new project structure
+
+## 6.0.0
+
+* Update to Rebus 6
+* Update to Unity 5
