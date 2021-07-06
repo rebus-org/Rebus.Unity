@@ -23,5 +23,8 @@
 
 ## 6.0.0
 
-* Update to Rebus 6
-* Update to Unity 5
+* Update to Rebus 6 and Unity 5 - thanks [michielvoo]
+
+
+
+[michielvoo]: https://github.com/michielvoo
